@@ -1,0 +1,53 @@
+[
+  {
+    "id": "BK-1768488629057-gui63uh6i",
+    "userId": "CUST-1768487801233-oh1eb5bu9",
+    "userName": "송우진",
+    "userPhone": "010-2878-7387",
+    "shopId": "s1",
+    "shopName": "Chahong Room",
+    "partnerId": "p1",
+    "serviceId": "sv1",
+    "serviceName": "Hippie Perm",
+    "date": "2026-02-10",
+    "time": "17:00",
+    "price": 180000,
+    "status": "pending",
+    "paymentStatus": "unpaid",
+    "createdAt": "2026-01-15T14:50:29.057Z"
+  },
+  {
+    "id": "BK-1768488701494-ltzd1aa1n",
+    "userId": "CUST-1768487801233-oh1eb5bu9",
+    "userName": "송우진",
+    "userPhone": "010-2878-7387",
+    "shopId": "s2",
+    "shopName": "Ginza Haruka",
+    "partnerId": "p2",
+    "serviceId": "sv3",
+    "serviceName": "Scalp Detox",
+    "date": "2026-01-20",
+    "time": "11:30",
+    "price": 120000,
+    "status": "pending",
+    "paymentStatus": "unpaid",
+    "createdAt": "2026-01-15T14:51:41.494Z"
+  },
+  {
+    "id": "BK-1768489403748-cazr3m6qv",
+    "userId": "CUST-1768487801233-oh1eb5bu9",
+    "userName": "송우진",
+    "userPhone": "010-2878-7387",
+    "shopId": "s1",
+    "shopName": "Chahong Room",
+    "partnerId": "p1",
+    "serviceId": "sv1",
+    "serviceName": "Hippie Perm",
+    "date": "2026-02-08",
+    "time": "16:30",
+    "price": 180000,
+    "status": "pending",
+    "paymentStatus": "unpaid",
+    "createdAt": "2026-01-15T15:03:23.748Z"
+  }
+]

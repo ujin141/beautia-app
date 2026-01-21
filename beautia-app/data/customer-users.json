@@ -1,0 +1,13 @@
+[
+  {
+    "id": "CUST-1768487801233-oh1eb5bu9",
+    "email": "ujin141@naver.com",
+    "passwordHash": "d7c04d5c136271466a3cf85f6cf6b3c0108f682bb779ad56ed63b391f7215adb",
+    "name": "송우진",
+    "phone": "010-2878-7387",
+    "role": "user",
+    "status": "active",
+    "joinDate": "2026-01-15T14:36:41.234Z",
+    "lastLoginAt": "2026-01-15T14:39:42.433Z"
+  }
+]
