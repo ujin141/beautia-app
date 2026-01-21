@@ -1,5 +1,6 @@
 'use client';
 
+// Cache busting: Force update 2026-01-21
 import React, { useState, useEffect, Suspense } from 'react';
 import { Tag, Percent, Plus, X, CreditCard, Coins, History, Megaphone, Layout, MapPin, Search, Loader2, CheckCircle2, Settings, Calendar, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
