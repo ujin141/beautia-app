@@ -155,7 +155,7 @@ export default function DashboardLayout({
     { name: t('partner_dashboard.menu_inbox'), href: '/partner/dashboard/inbox', icon: Mail },
     { name: t('partner_dashboard.menu_reviews'), href: '/partner/dashboard/reviews', icon: MessageSquare },
     { name: t('partner_dashboard.menu_finance'), href: '/partner/dashboard/finance', icon: Wallet },
-    { name: t('partner_dashboard.menu_marketing'), href: '/partner/dashboard/marketing', icon: Tag },
+    { name: t('partner_dashboard.menu_marketing') || '마케팅 도구', href: '/partner/dashboard/marketing', icon: Tag },
     { name: t('partner_dashboard.menu_profile') || '프로필', href: '/partner/dashboard/profile', icon: User },
     { name: t('partner_dashboard.menu_settings'), href: '/partner/dashboard/settings', icon: Settings },
   ];
