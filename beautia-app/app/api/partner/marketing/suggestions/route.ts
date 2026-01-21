@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
       status: { $ne: 'cancelled' }
     });
 
-    // 예약이 적으면 제안 (단순 로직: 이틀간 예약이 10건 미만이면)
-    if (bookings.length < 10) {
+    // 예약이 적으면 제안 (단순 로직: 이틀간 예약이 20건 미만이면 - 조건을 완화함)
+    if (bookings.length < 20) {
       suggestions.push({
         id: 'empty_slots',
         type: 'time_deal',
@@ -85,7 +85,8 @@ export async function GET(request: NextRequest) {
       nearbyUserCount = 500; // 위치 정보 없으면 기본값
     }
 
-    if (nearbyUserCount > 50) {
+    // 조건 완화: 10명 이상이면 제안
+    if (nearbyUserCount > 10) {
       suggestions.push({
         id: 'local_push',
         type: 'coupon',
@@ -100,8 +101,6 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. 단골 관리 (CRM) 제안
-    // 최근 3개월간 방문 없는 고객 확인 (재방문 유도)
-    // (구현 복잡도를 위해 여기서는 간단히 하드코딩된 제안 추가)
     suggestions.push({
       id: 'crm_revisit',
       type: 'message',
@@ -113,6 +112,21 @@ export async function GET(request: NextRequest) {
       icon: 'MessageSquare',
       color: 'text-blue-500',
     });
+    
+    // 4. 만약 제안이 하나도 없다면 기본 제안 추가 (Fallback)
+    if (suggestions.length === 0) {
+       suggestions.push({
+        id: 'default_promo',
+        type: 'ad',
+        title: '첫 광고 시작하기',
+        description: '아직 광고를 진행하지 않으셨나요? 첫 광고로 신규 고객을 만나보세요.',
+        impact: '신규 고객 유입 +30%',
+        actionLabel: '광고 시작하기',
+        actionUrl: '/partner/dashboard/marketing',
+        icon: 'Lightbulb',
+        color: 'text-yellow-500',
+      });
+    }
 
     return NextResponse.json({
       success: true,
