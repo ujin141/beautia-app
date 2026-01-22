@@ -1,0 +1,80 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Testing
+coverage
+
+# Next.js
+.next
+out
+
+# Production
+build
+dist
+
+# Misc
+.DS_Store
+*.pem
+*.log
+
+# Local env files
+.env*.local
+.env
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Turbo
+.turbo
+
+# MongoDB
+data/db
+
+# IDE
+.idea
+.vscode
+
+# Flutter (not needed for web deployment)
+flutter_app/
+BeautiaApp/
+mobile/
+
+# Other projects
+KRW_S/
+AI개발/
+선물/
+썸네일/
+
+# Large files
+*.mp4
+*.mov
+*.pdf
+*.ai
+*.psd
+*.png
+*.jpg
+*.jpeg
+!app/**/*.png
+!app/**/*.jpg
+!app/**/*.jpeg
+!public/**/*.png
+!public/**/*.jpg
+!public/**/*.jpeg
+
+# Scripts (not needed in production)
+# scripts/ - 주석 처리: 일부 스크립트가 필요할 수 있음
+tests/
+# docs/ - 주석 처리: 문서가 필요할 수 있음
+
+# Git
+.git
+.gitignore
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
