@@ -9,6 +9,7 @@ import { validateRequestBody, required, number } from '@/lib/api-validator';
 import connectDB from '@/lib/mongodb';
 import PartnerUser from '@/models/PartnerUser';
 import AdTransaction from '@/models/AdTransaction';
+import PlatformRevenue from '@/models/PlatformRevenue';
 import { verifyPartnerToken } from '@/lib/partner-token-verifier';
 import Stripe from 'stripe';
 
@@ -56,6 +57,11 @@ async function handlePost(request: NextRequest) {
   if (!stripe) {
     return serverErrorResponse(new Error('Stripe가 설정되지 않았습니다.'));
   }
+
+  // 플랫폼 수수료 설정 (10%)
+  const COMMISSION_RATE = 0.1; // 10% 수수료
+  const platformCommission = Math.floor(amount * COMMISSION_RATE);
+  const pointsToGive = amount - platformCommission; // 실제로 주는 포인트
 
   try {
     // 파트너 정보 조회
@@ -105,7 +111,9 @@ async function handlePost(request: NextRequest) {
       metadata: {
         partnerId: partnerUser._id.toString(),
         type: 'marketing_points_charge',
-        points: amount.toString(), // 포인트 = 금액 (1:1 비율)
+        points: pointsToGive.toString(), // 실제로 주는 포인트 (수수료 제외)
+        originalAmount: amount.toString(), // 원본 금액
+        commission: platformCommission.toString(), // 플랫폼 수수료
       },
     });
 
@@ -114,11 +122,25 @@ async function handlePost(request: NextRequest) {
       partnerId: partnerUser._id,
       type: 'charge',
       amount: amount,
-      description: `광고 포인트 ${amount.toLocaleString()}P 충전`,
+      description: `광고 포인트 ${pointsToGive.toLocaleString()}P 충전 (수수료 ${platformCommission.toLocaleString()}원)`,
       stripeSessionId: session.id,
       status: 'pending',
     });
     await transaction.save();
+
+    // 플랫폼 수익 기록 (pending 상태, 결제 완료 후 completed로 변경)
+    const platformRevenue = new PlatformRevenue({
+      type: 'marketing_charge',
+      partnerId: partnerUser._id,
+      amount: platformCommission,
+      originalAmount: amount,
+      commissionRate: COMMISSION_RATE,
+      currency: currency.toLowerCase(),
+      description: `포인트 충전 수수료 (${amount.toLocaleString()}원 중 ${platformCommission.toLocaleString()}원)`,
+      transactionId: transaction._id,
+      status: 'pending',
+    });
+    await platformRevenue.save();
 
     return successResponse({
       checkoutUrl: session.url,

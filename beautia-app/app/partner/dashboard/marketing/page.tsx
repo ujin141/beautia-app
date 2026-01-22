@@ -178,7 +178,18 @@ function MarketingPageContent() {
     }
   };
 
-  const handleBuyAd = async (adType: 'main_banner' | 'category_top' | 'search_powerlink' | 'local_push', adName: string, cost: number, duration?: number, budget?: number, keywords?: string[]) => {
+  const handleBuyAd = async (
+    adType: 'main_banner' | 'category_top' | 'search_powerlink' | 'local_push' | 
+            'search_top' | 'trending_first' | 'todays_pick_top' | 'editors_pick' | 
+            'popular_brands' | 'category_banner' | 'category_middle' | 
+            'shop_detail_top' | 'menu_middle' | 'community_middle' | 'chat_top',
+    adName: string, 
+    cost: number, 
+    duration?: number, 
+    budget?: number, 
+    keywords?: string[],
+    category?: string
+  ) => {
     // 포인트가 로딩 중이면 대기
     if (isLoadingPoints) {
       showNotification(t('partner_dashboard.marketing_loading_points'), 'error');
@@ -200,6 +211,7 @@ function MarketingPageContent() {
         duration,
         budget,
         keywords,
+        category,
       });
 
       // 성공 시 포인트 및 광고 목록 업데이트
@@ -743,6 +755,531 @@ function MarketingPageContent() {
                   </button>
                </div>
             </div>
+         </div>
+      </section>
+
+      {/* 4. 홈 화면 섹션별 광고 */}
+      <section>
+         <h3 className="text-[18px] font-bold mb-6 flex items-center gap-2">
+            <Layout className="w-5 h-5 text-brand-mint" /> 홈 화면 섹션별 광고
+         </h3>
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Search Top */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'search_top' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-mint transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-mint border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-mint text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">검색 결과</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-mint/20 border border-brand-mint rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">검색 결과 상단</h4>
+                    <p className="text-[13px] text-secondary mb-4">검색 결과 최상단에 노출됩니다.<br/>구매 의도가 높은 고객 타겟</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(12000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const duration = selectedDuration.search_top || 3;
+                          const cost = 12000 * duration;
+                          handleBuyAd('search_top', '검색 결과 상단', cost, duration);
+                        }}
+                        disabled={isBuyingAd === 'search_top' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'search_top' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Trending First */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'trending_first' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-pink transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-pink border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-pink text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">트렌딩 섹션</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-pink/20 border border-brand-pink rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">트렌딩 첫 번째</h4>
+                    <p className="text-[13px] text-secondary mb-4">트렌딩 섹션 첫 번째 카드에 노출<br/>높은 클릭률 예상</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(15000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const duration = selectedDuration.trending_first || 3;
+                          const cost = 15000 * duration;
+                          handleBuyAd('trending_first', '트렌딩 첫 번째', cost, duration);
+                        }}
+                        disabled={isBuyingAd === 'trending_first' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'trending_first' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Todays Pick Top */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'todays_pick_top' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-lilac transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-lilac border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-lilac text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">오늘의 추천</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-lilac/20 border border-brand-lilac rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">오늘의 추천 상단</h4>
+                    <p className="text-[13px] text-secondary mb-4">오늘의 추천 섹션 최상단 노출<br/>홈 화면 중간에 높은 노출</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(20000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const duration = selectedDuration.todays_pick_top || 3;
+                          const cost = 20000 * duration;
+                          handleBuyAd('todays_pick_top', '오늘의 추천 상단', cost, duration);
+                        }}
+                        disabled={isBuyingAd === 'todays_pick_top' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'todays_pick_top' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Editors Pick */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'editors_pick' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-pink transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-pink border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-pink text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">에디터 픽</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-pink/20 border border-brand-pink rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">에디터 픽</h4>
+                    <p className="text-[13px] text-secondary mb-4">프리미엄 섹션에 노출<br/>높은 신뢰도와 전환율</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(25000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const duration = selectedDuration.editors_pick || 3;
+                          const cost = 25000 * duration;
+                          handleBuyAd('editors_pick', '에디터 픽', cost, duration);
+                        }}
+                        disabled={isBuyingAd === 'editors_pick' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'editors_pick' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Popular Brands */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'popular_brands' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-mint transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-mint border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-mint text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">인기 브랜드</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-mint/20 border border-brand-mint rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">인기 브랜드</h4>
+                    <p className="text-[13px] text-secondary mb-4">브랜드 인지도 상승에 효과적<br/>프리미엄 노출</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(30000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const duration = selectedDuration.popular_brands || 3;
+                          const cost = 30000 * duration;
+                          handleBuyAd('popular_brands', '인기 브랜드', cost, duration);
+                        }}
+                        disabled={isBuyingAd === 'popular_brands' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'popular_brands' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+         </div>
+      </section>
+
+      {/* 5. 카테고리 및 매장 상세 광고 */}
+      <section>
+         <h3 className="text-[18px] font-bold mb-6 flex items-center gap-2">
+            <Layout className="w-5 h-5 text-brand-lilac" /> 카테고리 및 매장 상세 광고
+         </h3>
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Category Banner */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'category_banner' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-lilac transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-lilac border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-lilac text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">카테고리 상단</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-lilac/20 border border-brand-lilac rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">카테고리 상단 배너</h4>
+                    <p className="text-[13px] text-secondary mb-4">카테고리 화면 상단에 배너 노출<br/>카테고리 진입 시 즉시 노출</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(10000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const category = prompt('카테고리를 입력하세요 (예: Hair, Nail):');
+                          if (category) {
+                            const duration = selectedDuration.category_banner || 3;
+                            const cost = 10000 * duration;
+                            handleBuyAd('category_banner', '카테고리 상단 배너', cost, duration, undefined, undefined, category);
+                          }
+                        }}
+                        disabled={isBuyingAd === 'category_banner' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'category_banner' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Category Middle */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'category_middle' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-mint transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-mint border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-mint text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">카테고리 목록</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-mint/20 border border-brand-mint rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">카테고리 목록 중간</h4>
+                    <p className="text-[13px] text-secondary mb-4">카테고리 목록 중간에 삽입<br/>자연스러운 노출로 클릭률 높음</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(8000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const category = prompt('카테고리를 입력하세요 (예: Hair, Nail):');
+                          if (category) {
+                            const duration = selectedDuration.category_middle || 3;
+                            const cost = 8000 * duration;
+                            handleBuyAd('category_middle', '카테고리 목록 중간', cost, duration, undefined, undefined, category);
+                          }
+                        }}
+                        disabled={isBuyingAd === 'category_middle' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'category_middle' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Shop Detail Top */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'shop_detail_top' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-pink transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-pink border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-pink text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">매장 상세</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-pink/20 border border-brand-pink rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">매장 상세 상단</h4>
+                    <p className="text-[13px] text-secondary mb-4">매장 상세 화면 상단 배너<br/>예약 전환 직전 단계 노출</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(15000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const duration = selectedDuration.shop_detail_top || 3;
+                          const cost = 15000 * duration;
+                          handleBuyAd('shop_detail_top', '매장 상세 상단', cost, duration);
+                        }}
+                        disabled={isBuyingAd === 'shop_detail_top' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'shop_detail_top' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Menu Middle */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'menu_middle' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-lilac transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-lilac border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-lilac text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">메뉴 목록</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-lilac/20 border border-brand-lilac rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">메뉴 섹션 사이</h4>
+                    <p className="text-[13px] text-secondary mb-4">메뉴 목록 중간에 삽입<br/>메뉴를 보는 고객은 구매 의도 높음</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(10000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const duration = selectedDuration.menu_middle || 3;
+                          const cost = 10000 * duration;
+                          handleBuyAd('menu_middle', '메뉴 섹션 사이', cost, duration);
+                        }}
+                        disabled={isBuyingAd === 'menu_middle' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'menu_middle' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+         </div>
+      </section>
+
+      {/* 6. 커뮤니티 및 채팅 광고 */}
+      <section>
+         <h3 className="text-[18px] font-bold mb-6 flex items-center gap-2">
+            <Layout className="w-5 h-5 text-brand-mint" /> 커뮤니티 및 채팅 광고
+         </h3>
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Community Middle */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'community_middle' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-lilac transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-lilac border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-lilac text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">커뮤니티</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-lilac/20 border border-brand-lilac rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">커뮤니티 게시글 사이</h4>
+                    <p className="text-[13px] text-secondary mb-4">커뮤니티 게시글 목록 중간에 삽입<br/>활성 사용자 타겟</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(8000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const duration = selectedDuration.community_middle || 3;
+                          const cost = 8000 * duration;
+                          handleBuyAd('community_middle', '커뮤니티 게시글 사이', cost, duration);
+                        }}
+                        disabled={isBuyingAd === 'community_middle' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'community_middle' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Chat Top */}
+            {(() => {
+              const activeAd = activeAds.find(ad => ad.type === 'chat_top' && ad.status === 'active');
+              return (
+                <div className={`bg-white rounded-2xl border overflow-hidden hover:border-brand-mint transition-all group cursor-pointer relative ${
+                  activeAd ? 'border-brand-mint border-2' : 'border-line'
+                }`}>
+                  {activeAd && (
+                    <div className="absolute top-2 right-2 z-10 bg-brand-mint text-white text-[10px] px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('partner_dashboard.marketing_active')}
+                    </div>
+                  )}
+                  <div className="bg-gray-100 h-32 flex items-center justify-center relative">
+                    <div className="w-3/4 h-3/4 bg-white rounded-lg shadow-sm flex items-center justify-center text-[10px] text-gray-400">채팅 목록</div>
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-1/2 h-8 bg-brand-mint/20 border border-brand-mint rounded" />
+                  </div>
+                  <div className="p-6">
+                    <h4 className="font-bold text-[16px] mb-2">채팅 목록 상단</h4>
+                    <p className="text-[13px] text-secondary mb-4">채팅 목록 화면 상단 배너<br/>활성 사용자 타겟</p>
+                    <div className="flex justify-between items-end">
+                      <div className="text-[18px] font-bold text-primary">{formatPrice(10000)} <span className="text-[12px] text-secondary font-normal">/ 일</span></div>
+                      <button 
+                        onClick={() => {
+                          const duration = selectedDuration.chat_top || 3;
+                          const cost = 10000 * duration;
+                          handleBuyAd('chat_top', '채팅 목록 상단', cost, duration);
+                        }}
+                        disabled={isBuyingAd === 'chat_top' || isLoadingPoints || !!activeAd}
+                        className={`px-4 py-2 bg-primary text-white text-[12px] font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2`}
+                      >
+                        {isBuyingAd === 'chat_top' ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> {t('partner_dashboard.marketing_purchasing')}</>
+                        ) : activeAd ? (
+                          t('partner_dashboard.marketing_active')
+                        ) : (
+                          t('partner_dashboard.marketing_select')
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
          </div>
       </section>
 

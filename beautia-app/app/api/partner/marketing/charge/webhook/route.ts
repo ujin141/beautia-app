@@ -6,6 +6,7 @@ import Stripe from 'stripe';
 import connectDB from '@/lib/mongodb';
 import PartnerUser from '@/models/PartnerUser';
 import AdTransaction from '@/models/AdTransaction';
+import PlatformRevenue from '@/models/PlatformRevenue';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -54,6 +55,8 @@ export async function POST(request: NextRequest) {
       if (session.metadata?.type === 'marketing_points_charge' && session.metadata?.partnerId) {
         const partnerId = session.metadata.partnerId;
         const points = parseInt(session.metadata.points || '0');
+        const originalAmount = parseInt(session.metadata.originalAmount || '0');
+        const commission = parseInt(session.metadata.commission || '0');
 
         // 거래 내역 찾기
         const transaction = await AdTransaction.findOne({
@@ -77,7 +80,16 @@ export async function POST(request: NextRequest) {
             transaction.stripePaymentIntentId = session.payment_intent as string;
             await transaction.save();
 
-            console.log(`포인트 충전 완료: 파트너 ${partnerId}, ${points}P`);
+            // 플랫폼 수익 업데이트 (pending -> completed)
+            await PlatformRevenue.findOneAndUpdate(
+              { transactionId: transaction._id, status: 'pending' },
+              {
+                status: 'completed',
+                stripePaymentIntentId: session.payment_intent as string,
+              }
+            );
+
+            console.log(`포인트 충전 완료: 파트너 ${partnerId}, ${points}P (수수료 ${commission}원)`);
           }
         }
       }

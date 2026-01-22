@@ -663,10 +663,14 @@ export const PartnerApi = {
 
   // 광고 구매/활성화
   purchaseAd: async (adData: {
-    adType: 'main_banner' | 'category_top' | 'search_powerlink' | 'local_push';
+    adType: 'main_banner' | 'category_top' | 'search_powerlink' | 'local_push' | 
+            'search_top' | 'trending_first' | 'todays_pick_top' | 'editors_pick' | 
+            'popular_brands' | 'category_banner' | 'category_middle' | 
+            'shop_detail_top' | 'menu_middle' | 'community_middle' | 'chat_top';
     duration?: number;
     budget?: number;
     keywords?: string[];
+    category?: string;
   }): Promise<{ adId: string; remainingPoints: number; startDate: string; endDate: string }> => {
     const token = localStorage.getItem('partner_token');
     if (!token) {

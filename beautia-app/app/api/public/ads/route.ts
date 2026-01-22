@@ -12,7 +12,7 @@ async function handleGet(request: NextRequest) {
   await connectDB();
 
   const searchParams = request.nextUrl.searchParams;
-  const adType = searchParams.get('type'); // main_banner, category_top, search_powerlink
+  const adType = searchParams.get('type'); // 모든 광고 타입 지원
   const category = searchParams.get('category');
   const limit = parseInt(searchParams.get('limit') || '10');
 
@@ -46,6 +46,7 @@ async function handleGet(request: NextRequest) {
           id: ad._id.toString(),
           type: ad.type,
           shopId: ad.shopId.toString(),
+          category: ad.category || undefined,
           shop: {
             id: shop._id.toString(),
             name: (shop as any).name,
@@ -65,12 +66,15 @@ async function handleGet(request: NextRequest) {
     // null 제거
     const validAds = adsWithShop.filter((ad) => ad !== null);
 
-    // 카테고리 필터링
+    // 카테고리 필터링 (광고의 category 필드 또는 샵의 category로 필터링)
     let filteredAds = validAds;
     if (category) {
-      filteredAds = validAds.filter((ad: any) => 
-        ad.shop.category?.toLowerCase().includes(category.toLowerCase())
-      );
+      filteredAds = validAds.filter((ad: any) => {
+        const adCategory = (ad as any).category?.toLowerCase();
+        const shopCategory = ad.shop.category?.toLowerCase();
+        const categoryLower = category.toLowerCase();
+        return adCategory?.includes(categoryLower) || shopCategory?.includes(categoryLower);
+      });
     }
 
     return successResponse({

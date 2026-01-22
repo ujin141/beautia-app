@@ -11,6 +11,7 @@ import PartnerUser from '@/models/PartnerUser';
 import Shop from '@/models/Shop';
 import Ad from '@/models/Ad';
 import AdTransaction from '@/models/AdTransaction';
+import PlatformRevenue from '@/models/PlatformRevenue';
 import { verifyPartnerToken } from '@/lib/partner-token-verifier';
 import { ObjectId } from 'mongodb';
 
@@ -89,14 +90,21 @@ async function handlePost(request: NextRequest) {
   // 요청 본문 검증
   const body = await request.json();
   const validation = validateRequestBody(body, {
-    adType: [required('adType'), string('adType', { enum: ['main_banner', 'category_top', 'search_powerlink', 'local_push'] })],
+    adType: [required('adType'), string('adType', { 
+      enum: [
+        'main_banner', 'category_top', 'search_powerlink', 'local_push',
+        'search_top', 'trending_first', 'todays_pick_top', 'editors_pick',
+        'popular_brands', 'category_banner', 'category_middle',
+        'shop_detail_top', 'menu_middle', 'community_middle', 'chat_top'
+      ] 
+    })],
   });
 
   if (!validation.valid) {
     return validationErrorResponse(validation.error || '유효하지 않은 요청입니다.');
   }
 
-  const { adType, duration, budget, keywords } = body;
+  const { adType, duration, budget, keywords, category } = body;
 
   try {
     // 파트너 정보 조회
@@ -155,21 +163,116 @@ async function handlePost(request: NextRequest) {
         endDate.setDate(endDate.getDate() + 30); // 기본 30일
         break;
 
+      // 새로운 광고 타입들
+      case 'search_top':
+        dailyCost = 12000;
+        const searchDuration = duration || 7;
+        cost = dailyCost * searchDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + searchDuration);
+        break;
+
+      case 'trending_first':
+        dailyCost = 15000;
+        const trendingDuration = duration || 7;
+        cost = dailyCost * trendingDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + trendingDuration);
+        break;
+
+      case 'todays_pick_top':
+        dailyCost = 20000;
+        const todaysPickDuration = duration || 7;
+        cost = dailyCost * todaysPickDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + todaysPickDuration);
+        break;
+
+      case 'editors_pick':
+        dailyCost = 25000;
+        const editorsPickDuration = duration || 7;
+        cost = dailyCost * editorsPickDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + editorsPickDuration);
+        break;
+
+      case 'popular_brands':
+        dailyCost = 30000;
+        const brandsDuration = duration || 7;
+        cost = dailyCost * brandsDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + brandsDuration);
+        break;
+
+      case 'category_banner':
+        dailyCost = 10000;
+        const categoryBannerDuration = duration || 7;
+        cost = dailyCost * categoryBannerDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + categoryBannerDuration);
+        break;
+
+      case 'category_middle':
+        dailyCost = 8000;
+        const categoryMiddleDuration = duration || 7;
+        cost = dailyCost * categoryMiddleDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + categoryMiddleDuration);
+        break;
+
+      case 'shop_detail_top':
+        dailyCost = 15000;
+        const shopDetailDuration = duration || 7;
+        cost = dailyCost * shopDetailDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + shopDetailDuration);
+        break;
+
+      case 'menu_middle':
+        dailyCost = 10000;
+        const menuMiddleDuration = duration || 7;
+        cost = dailyCost * menuMiddleDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + menuMiddleDuration);
+        break;
+
+      case 'community_middle':
+        dailyCost = 8000;
+        const communityDuration = duration || 7;
+        cost = dailyCost * communityDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + communityDuration);
+        break;
+
+      case 'chat_top':
+        dailyCost = 10000;
+        const chatDuration = duration || 7;
+        cost = dailyCost * chatDuration;
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + chatDuration);
+        break;
+
       default:
         return validationErrorResponse('지원하지 않는 광고 타입입니다.');
     }
 
-    // 포인트 확인
+    // 플랫폼 수수료 계산 (10%)
+    const COMMISSION_RATE = 0.1;
+    const platformCommission = Math.floor(cost * COMMISSION_RATE);
+    const actualCost = cost; // 파트너가 지불하는 실제 비용
+    const totalCost = cost + platformCommission; // 플랫폼이 받는 총 비용
+
+    // 포인트 확인 (수수료 포함)
     const currentPoints = partnerUser.marketingPoints || 0;
-    if (currentPoints < cost) {
-      return validationErrorResponse(`포인트가 부족합니다. 필요: ${cost.toLocaleString()}P, 보유: ${currentPoints.toLocaleString()}P`);
+    if (currentPoints < totalCost) {
+      return validationErrorResponse(`포인트가 부족합니다. 필요: ${totalCost.toLocaleString()}P (광고 ${cost.toLocaleString()}P + 수수료 ${platformCommission.toLocaleString()}P), 보유: ${currentPoints.toLocaleString()}P`);
     }
 
-    // 포인트 차감 (atomic operation)
+    // 포인트 차감 (수수료 포함, atomic operation)
     const updatedPartner = await PartnerUser.findByIdAndUpdate(
       verification.partnerId,
       {
-        $inc: { marketingPoints: -cost },
+        $inc: { marketingPoints: -totalCost },
       },
       { new: true }
     );
@@ -192,6 +295,7 @@ async function handlePost(request: NextRequest) {
       costPerAction,
       budget: budget || cost,
       keywords: keywords || [],
+      category: category || undefined,
       impressions: 0,
       clicks: 0,
     });
@@ -202,12 +306,27 @@ async function handlePost(request: NextRequest) {
     const transaction = new AdTransaction({
       partnerId: new ObjectId(verification.partnerId),
       type: 'spend',
-      amount: cost,
-      description: `${adType} 광고 구매`,
+      amount: totalCost,
+      description: `${adType} 광고 구매 (광고 ${cost.toLocaleString()}P + 수수료 ${platformCommission.toLocaleString()}P)`,
       adId: ad._id,
       status: 'completed',
     });
     await transaction.save();
+
+    // 플랫폼 수익 기록
+    const platformRevenue = new PlatformRevenue({
+      type: 'marketing_ad',
+      partnerId: new ObjectId(verification.partnerId),
+      shopId: shop._id,
+      amount: platformCommission,
+      originalAmount: cost,
+      commissionRate: COMMISSION_RATE,
+      currency: 'KRW',
+      description: `${adType} 광고 구매 수수료 (${cost.toLocaleString()}P 중 ${platformCommission.toLocaleString()}P)`,
+      transactionId: transaction._id,
+      status: 'completed',
+    });
+    await platformRevenue.save();
 
     return successResponse(
       {

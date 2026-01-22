@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Download, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { Download, CheckCircle, Clock, Loader2, TrendingUp, DollarSign } from 'lucide-react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface FinanceData {
@@ -24,9 +24,20 @@ interface FinanceData {
   }>;
 }
 
+interface MarketingRevenue {
+  totalRevenue: number;
+  revenueByType: {
+    marketing_charge?: number;
+    marketing_ad?: number;
+  };
+  revenueByMonth: { [key: string]: number };
+  count: number;
+}
+
 export default function AdminFinancePage() {
   const { formatPrice } = useLanguage();
   const [financeData, setFinanceData] = useState<FinanceData | null>(null);
+  const [marketingRevenue, setMarketingRevenue] = useState<MarketingRevenue | null>(null);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
@@ -34,13 +45,20 @@ export default function AdminFinancePage() {
     async function fetchData() {
       try {
         const token = typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null;
-        const response = await fetch('/api/admin/finance', {
-          headers: {
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-          },
-        });
+        const [financeResponse, revenueResponse] = await Promise.all([
+          fetch('/api/admin/finance', {
+            headers: {
+              ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+          }),
+          fetch('/api/admin/revenue', {
+            headers: {
+              ...(token && { 'Authorization': `Bearer ${token}` }),
+            },
+          }),
+        ]);
         
-        if (response.status === 401) {
+        if (financeResponse.status === 401 || revenueResponse.status === 401) {
           if (typeof window !== 'undefined') {
             localStorage.removeItem('admin_token');
             localStorage.removeItem('admin_user');
@@ -49,10 +67,17 @@ export default function AdminFinancePage() {
           return;
         }
         
-        if (response.ok) {
-          const data = await response.json();
+        if (financeResponse.ok) {
+          const data = await financeResponse.json();
           if (data.success) {
             setFinanceData(data.data);
+          }
+        }
+
+        if (revenueResponse.ok) {
+          const data = await revenueResponse.json();
+          if (data.success) {
+            setMarketingRevenue(data.data.summary);
           }
         }
       } catch (error) {
@@ -185,7 +210,7 @@ export default function AdminFinancePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
          <div className="bg-white p-6 rounded-xl border border-gray-200">
             <div className="text-[13px] text-gray-500 mb-2">이번 달 총 거래액 (GMV)</div>
             <div className="text-[28px] font-bold">{formatPrice(financeData.totalGMV)}</div>
@@ -196,11 +221,55 @@ export default function AdminFinancePage() {
             <div className="text-[12px] text-gray-400 mt-1">평균 수수료율 {financeData.feeRate}%</div>
          </div>
          <div className="bg-white p-6 rounded-xl border border-gray-200">
+            <div className="text-[13px] text-gray-500 mb-2 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-600" />
+              마케팅 수익
+            </div>
+            <div className="text-[28px] font-bold text-green-600">
+              {marketingRevenue ? formatPrice(marketingRevenue.totalRevenue) : '0'}
+            </div>
+            <div className="text-[12px] text-gray-400 mt-1">
+              {marketingRevenue?.count || 0}건 거래
+            </div>
+         </div>
+         <div className="bg-white p-6 rounded-xl border border-gray-200">
             <div className="text-[13px] text-gray-500 mb-2">지급 대기 금액 (Payable)</div>
             <div className="text-[28px] font-bold text-red-500">{formatPrice(financeData.pendingPayout)}</div>
             <div className="text-[12px] text-gray-400 mt-1">{financeData.partnerCount}개 파트너 대상</div>
          </div>
       </div>
+
+      {/* 마케팅 수익 상세 */}
+      {marketingRevenue && marketingRevenue.totalRevenue > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 font-bold text-[16px] flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-green-600" />
+            마케팅 수익 상세
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-[12px] text-gray-500 mb-1">포인트 충전 수수료</div>
+                <div className="text-[20px] font-bold text-green-600">
+                  {formatPrice(marketingRevenue.revenueByType.marketing_charge || 0)}
+                </div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-[12px] text-gray-500 mb-1">광고 구매 수수료</div>
+                <div className="text-[20px] font-bold text-green-600">
+                  {formatPrice(marketingRevenue.revenueByType.marketing_ad || 0)}
+                </div>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-[12px] text-gray-500 mb-1">총 마케팅 수익</div>
+                <div className="text-[20px] font-bold text-green-600">
+                  {formatPrice(marketingRevenue.totalRevenue)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
          <div className="p-4 border-b border-gray-200 font-bold text-[16px]">파트너 정산 내역</div>
