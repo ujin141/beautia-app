@@ -179,7 +179,7 @@ function SettingsPageContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [translatingId, setTranslatingId] = useState<number | null>(null);
-  const [expandedMenus, setExpandedMenus] = useState<Map<number, 'en' | 'th' | 'zh'>>(new Map());
+  const [expandedMenus, setExpandedMenus] = useState<Map<number, 'en' | 'ja' | 'th' | 'zh'>>(new Map());
   const [loading, setLoading] = useState(true);
   const [currencyRates, setCurrencyRates] = useState<Record<string, number>>({});
   const [previewMenuId, setPreviewMenuId] = useState<number | null>(null);
