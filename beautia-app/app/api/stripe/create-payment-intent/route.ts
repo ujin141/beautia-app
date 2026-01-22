@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     await connectDB();
     
     const body = await request.json();
-    const { bookingId, amount, currency = 'krw', userId } = body;
+    const { bookingId, amount, currency = 'krw', userId, paymentType } = body;
     
     if (!amount) {
       return NextResponse.json(
@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
         userId: userId || booking?.userId?.toString() || '',
         shopName: booking?.shopName || '',
         serviceName: booking?.serviceName || '',
+        paymentType: paymentType || 'full',
       },
       automatic_payment_methods: {
         enabled: true,

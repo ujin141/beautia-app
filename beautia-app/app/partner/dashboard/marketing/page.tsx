@@ -384,6 +384,67 @@ function MarketingPageContent() {
          </div>
       </div>
 
+      {/* 3. Time Deal (타임 딜) - 최상단으로 이동 */}
+      <section>
+         <h3 className="text-[18px] font-bold mb-6 flex items-center gap-2">
+            <Clock className="w-5 h-5 text-brand-mint" /> {t('partner_dashboard.marketing_time_deal') || '타임 딜 (Time Deal)'}
+         </h3>
+         
+         {/* Active Time Deals List */}
+         {timeDeals.length > 0 && (
+           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+             {timeDeals.map((deal) => (
+               <div key={deal._id} className="bg-white p-4 rounded-xl border border-brand-mint/50 relative overflow-hidden">
+                 <div className="absolute top-0 right-0 bg-brand-mint text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold">
+                   Running
+                 </div>
+                 <h4 className="font-bold text-[15px] mb-1">{deal.title}</h4>
+                 <div className="text-[20px] font-bold text-brand-mint mb-2">
+                   {deal.discountType === 'percentage' ? `${deal.discountValue}%` : formatPrice(deal.discountValue)} OFF
+                 </div>
+                 <div className="text-[11px] text-secondary space-y-1">
+                   <div>{new Date(deal.startDate).toLocaleDateString()} ~ {new Date(deal.endDate).toLocaleDateString()}</div>
+                   <div>{t('partner_dashboard.marketing_usage_count') || '사용됨'}: {deal.usedCount}</div>
+                 </div>
+                 <button 
+                   onClick={() => handleDeleteTimeDeal(deal._id)}
+                   className="mt-3 w-full py-1.5 text-[12px] border border-gray-200 rounded hover:bg-gray-50 text-gray-500"
+                 >
+                   {t('common.delete') || '삭제'}
+                 </button>
+               </div>
+             ))}
+           </div>
+         )}
+
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-2xl border border-line flex justify-between items-center hover:shadow-lg transition-shadow cursor-pointer">
+               <div>
+                  <h4 className="font-bold text-[16px] mb-1 flex items-center gap-2">
+                     <Clock className="w-4 h-4 text-secondary" /> {t('partner_dashboard.marketing_time_deal_title') || '반짝 타임 딜'}
+                  </h4>
+                  <p className="text-[13px] text-secondary">
+                    {t('partner_dashboard.marketing_time_deal_desc') || '특정 시간에만 파격적인 할인을 제공하여<br/>고객의 방문을 유도해보세요.'}
+                  </p>
+               </div>
+               <div className="text-right">
+                  <div className="text-[18px] font-bold text-brand-mint">
+                    {t('partner_dashboard.marketing_high_conversion') || '높은 전환율'}
+                  </div>
+                  <button 
+                     onClick={() => {
+                       setPromotionForm(prev => ({ ...prev, type: 'flash_sale' }));
+                       setShowPromotionModal(true);
+                     }}
+                     className="mt-2 text-[12px] font-bold text-brand-lilac underline"
+                  >
+                     {t('partner_dashboard.marketing_create_time_deal') || '타임 딜 만들기'}
+                  </button>
+               </div>
+            </div>
+         </div>
+      </section>
+
       {/* 1. Exposure Ads (노출형 광고) */}
       <section>
          <h3 className="text-[18px] font-bold mb-6 flex items-center gap-2">
@@ -679,67 +740,6 @@ function MarketingPageContent() {
                      className="mt-2 text-[12px] font-bold text-brand-lilac underline"
                   >
                      {t('partner_dashboard.marketing_coupon_create')}
-                  </button>
-               </div>
-            </div>
-         </div>
-      </section>
-
-      {/* 3. Time Deal (타임 딜) */}
-      <section>
-         <h3 className="text-[18px] font-bold mb-6 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-brand-mint" /> {t('partner_dashboard.marketing_time_deal') || '타임 딜 (Time Deal)'}
-         </h3>
-         
-         {/* Active Time Deals List */}
-         {timeDeals.length > 0 && (
-           <div className="mb-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-             {timeDeals.map((deal) => (
-               <div key={deal._id} className="bg-white p-4 rounded-xl border border-brand-mint/50 relative overflow-hidden">
-                 <div className="absolute top-0 right-0 bg-brand-mint text-white text-[10px] px-2 py-1 rounded-bl-lg font-bold">
-                   Running
-                 </div>
-                 <h4 className="font-bold text-[15px] mb-1">{deal.title}</h4>
-                 <div className="text-[20px] font-bold text-brand-mint mb-2">
-                   {deal.discountType === 'percentage' ? `${deal.discountValue}%` : formatPrice(deal.discountValue)} OFF
-                 </div>
-                 <div className="text-[11px] text-secondary space-y-1">
-                   <div>{new Date(deal.startDate).toLocaleDateString()} ~ {new Date(deal.endDate).toLocaleDateString()}</div>
-                   <div>{t('partner_dashboard.marketing_usage_count') || '사용됨'}: {deal.usedCount}</div>
-                 </div>
-                 <button 
-                   onClick={() => handleDeleteTimeDeal(deal._id)}
-                   className="mt-3 w-full py-1.5 text-[12px] border border-gray-200 rounded hover:bg-gray-50 text-gray-500"
-                 >
-                   {t('common.delete') || '삭제'}
-                 </button>
-               </div>
-             ))}
-           </div>
-         )}
-
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-2xl border border-line flex justify-between items-center hover:shadow-lg transition-shadow cursor-pointer">
-               <div>
-                  <h4 className="font-bold text-[16px] mb-1 flex items-center gap-2">
-                     <Clock className="w-4 h-4 text-secondary" /> {t('partner_dashboard.marketing_time_deal_title') || '반짝 타임 딜'}
-                  </h4>
-                  <p className="text-[13px] text-secondary">
-                    {t('partner_dashboard.marketing_time_deal_desc') || '특정 시간에만 파격적인 할인을 제공하여<br/>고객의 방문을 유도해보세요.'}
-                  </p>
-               </div>
-               <div className="text-right">
-                  <div className="text-[18px] font-bold text-brand-mint">
-                    {t('partner_dashboard.marketing_high_conversion') || '높은 전환율'}
-                  </div>
-                  <button 
-                     onClick={() => {
-                       setPromotionForm(prev => ({ ...prev, type: 'flash_sale' }));
-                       setShowPromotionModal(true);
-                     }}
-                     className="mt-2 text-[12px] font-bold text-brand-lilac underline"
-                  >
-                     {t('partner_dashboard.marketing_create_time_deal') || '타임 딜 만들기'}
                   </button>
                </div>
             </div>

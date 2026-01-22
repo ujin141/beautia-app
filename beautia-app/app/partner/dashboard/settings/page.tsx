@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { Clock, Calendar, Plus, Trash2, Save, CheckCircle2, Loader2, Globe, ChevronDown, CreditCard, Building2, ExternalLink, Lock } from 'lucide-react';
+import { Clock, Calendar, Plus, Trash2, Save, CheckCircle2, Loader2, Globe, ChevronDown, CreditCard, Building2, ExternalLink, Lock, Sparkles, Eye, DollarSign, X } from 'lucide-react';
 import { PartnerApi } from '../../../../lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../../../contexts/LanguageContext';
@@ -21,6 +21,8 @@ interface Menu {
    id: number;
    name: string;
    nameTranslations?: MenuTranslations;
+   description?: string;
+   descriptionTranslations?: MenuTranslations;
    price: number;
    time: number;
 }
@@ -177,91 +179,121 @@ function SettingsPageContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [translatingId, setTranslatingId] = useState<number | null>(null);
-  const [expandedMenus, setExpandedMenus] = useState<Set<number>>(new Set());
+  const [expandedMenus, setExpandedMenus] = useState<Map<number, 'en' | 'th' | 'zh'>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [currencyRates, setCurrencyRates] = useState<Record<string, number>>({});
+  const [previewMenuId, setPreviewMenuId] = useState<number | null>(null);
+  const [previewLanguage, setPreviewLanguage] = useState<'en' | 'ja' | 'th' | 'zh'>('en');
   const { t, formatPrice, language } = useLanguage();
 
-  // 번역 함수
-  const translateMenuName = async (menuId: number, text: string, sourceLang: Language = 'ko') => {
-    if (!text.trim()) {
-      setMenus(prev => prev.map(m => m.id === menuId ? { ...m, nameTranslations: undefined } : m));
+  // 통화 환율 로드
+  useEffect(() => {
+    async function loadCurrencyRates() {
+      try {
+        const response = await fetch('/api/currency/rates');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.rates) {
+            setCurrencyRates(data.rates);
+          }
+        }
+      } catch (error) {
+        console.error('환율 로드 실패:', error);
+      }
+    }
+    loadCurrencyRates();
+  }, []);
+
+  // 통화 환산 함수
+  const convertCurrency = (krwAmount: number, targetCurrency: 'USD' | 'THB' | 'CNY' | 'JPY'): string => {
+    if (!krwAmount || !currencyRates[targetCurrency]) return '0';
+    const converted = krwAmount * currencyRates[targetCurrency];
+    
+    const symbols: Record<string, string> = {
+      USD: '$',
+      THB: '฿',
+      CNY: '¥',
+      JPY: '¥',
+    };
+    
+    const formatter = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: targetCurrency === 'USD' ? 2 : 0,
+      maximumFractionDigits: targetCurrency === 'USD' ? 2 : 0,
+    });
+    
+    return `${symbols[targetCurrency]}${formatter.format(converted)}`;
+  };
+
+  // AI 번역 함수 (GPT-4o 사용)
+  const translateMenuWithAI = async (menuId: number) => {
+    const menu = menus.find(m => m.id === menuId);
+    if (!menu || !menu.name.trim()) {
+      alert('메뉴명을 먼저 입력해주세요.');
       return;
     }
 
     setTranslatingId(menuId);
     try {
-      const targetLangs: Language[] = ['en', 'ja', 'th', 'zh'];
-      const response = await fetch('/api/translate', {
+      const targetLangs: Language[] = ['en', 'ja', 'th', 'zh']; // ENG, JPN, THA, CHN
+      const response = await fetch('/api/translate/gpt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, targetLang: targetLangs, sourceLang }),
+        body: JSON.stringify({
+          text: menu.name,
+          description: menu.description,
+          targetLangs,
+          sourceLang: 'ko',
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        const translations: MenuTranslations = {};
-        targetLangs.forEach(lang => {
-          if (data.translations && data.translations[lang]) {
-            translations[lang] = data.translations[lang];
-          }
-        });
+        if (data.success && data.translations) {
+          const nameTranslations: MenuTranslations = {};
+          const descriptionTranslations: MenuTranslations = {};
+          
+          targetLangs.forEach(lang => {
+            if (data.translations[lang]) {
+              nameTranslations[lang] = data.translations[lang].name;
+              if (data.translations[lang].description) {
+                descriptionTranslations[lang] = data.translations[lang].description;
+              }
+            }
+          });
 
-        setMenus(prev => prev.map(m => 
-          m.id === menuId 
-            ? { ...m, nameTranslations: translations } 
-            : m
-        ));
+          setMenus(prev => prev.map(m => 
+            m.id === menuId 
+              ? { 
+                  ...m, 
+                  nameTranslations,
+                  descriptionTranslations: Object.keys(descriptionTranslations).length > 0 ? descriptionTranslations : undefined,
+                } 
+              : m
+          ));
+        }
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || '번역에 실패했습니다.');
       }
     } catch (error) {
-      console.error('Translation failed:', error);
+      console.error('AI 번역 실패:', error);
+      alert('번역 중 오류가 발생했습니다.');
     } finally {
       setTranslatingId(null);
     }
   };
 
-  // 디바운스 훅 - 메뉴 이름 변경 시 자동 번역
-  useEffect(() => {
-    const timeoutIds: Map<number, ReturnType<typeof setTimeout>> = new Map();
-    
-    menus.forEach(menu => {
-      // 유효한 ID 확인
-      const menuId = menu.id && !isNaN(menu.id) ? menu.id : null;
-      if (!menuId) return; // 유효하지 않은 ID는 건너뛰기
+  // 자동 번역은 제거 (수동 AI 번역 버튼만 사용)
 
-      if (menu.name && menu.name.trim()) {
-        // 이전 타임아웃 취소
-        const prevTimeout = timeoutIds.get(menuId);
-        if (prevTimeout) clearTimeout(prevTimeout);
-
-        // 새 타임아웃 설정 (1.5초 후 번역)
-        const timeout = setTimeout(() => {
-          translateMenuName(menuId, menu.name);
-        }, 1500);
-        timeoutIds.set(menuId, timeout);
-      } else {
-        // 텍스트가 비어있으면 번역 제거
-        setMenus(prev => prev.map(m => 
-          m.id === menuId && m.nameTranslations 
-            ? { ...m, nameTranslations: undefined } 
-            : m
-        ));
-      }
-    });
-
-    return () => {
-      timeoutIds.forEach(timeout => clearTimeout(timeout));
-    };
-  }, [menus.map(m => `${m.id || 'null'}:${m.name}`).join('|')]); // id와 name 조합으로 추적
-
-  const toggleMenuExpanded = (menuId: number) => {
+  const toggleMenuLanguage = (menuId: number, lang: 'en' | 'ja' | 'th' | 'zh') => {
     setExpandedMenus(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(menuId)) {
-        newSet.delete(menuId);
+      const newMap = new Map(prev);
+      if (newMap.get(menuId) === lang) {
+        newMap.delete(menuId);
       } else {
-        newSet.add(menuId);
+        newMap.set(menuId, lang);
       }
-      return newSet;
+      return newMap;
     });
   };
 
@@ -295,6 +327,8 @@ function SettingsPageContent() {
                   id: menuId,
                   name: m.name || '',
                   nameTranslations: m.nameTranslations,
+                  description: m.description || '',
+                  descriptionTranslations: m.descriptionTranslations,
                   price: m.price || 0,
                   time: m.time || 60,
                 };
@@ -324,6 +358,7 @@ function SettingsPageContent() {
      const newMenu: Menu = {
         id: newId,
         name: '',
+        description: '',
         price: 0,
         time: 60
      };
@@ -346,6 +381,8 @@ function SettingsPageContent() {
             id: m.id.toString(),
             name: m.name,
             nameTranslations: m.nameTranslations,
+            description: m.description,
+            descriptionTranslations: m.descriptionTranslations,
             price: m.price,
             time: m.time,
           })),
@@ -504,73 +541,214 @@ function SettingsPageContent() {
             </button>
          </div>
          
-         <div className="space-y-4">
+         <div className="space-y-6">
             {menus.map((menu, i) => {
-               // 유효하지 않은 ID 처리
                const menuId = menu.id && !isNaN(menu.id) ? menu.id : i;
-               const isExpanded = expandedMenus.has(menuId);
                const isTranslating = translatingId === menuId;
+               const hasTranslations = menu.nameTranslations && Object.keys(menu.nameTranslations).length > 0;
                
                return (
-                  <div key={menuId} className="space-y-2">
-                     <div className="flex items-center gap-4 p-4 rounded-xl bg-surface border border-transparent group hover:bg-white hover:border-line transition-all">
-                        <div className="flex-1 flex flex-col gap-2">
+                  <div key={menuId} className="border-2 border-line rounded-2xl p-6 space-y-6 hover:border-brand-lilac transition-all">
+                     {/* 기본 정보 입력 섹션 */}
+                     <div className="space-y-4">
+                        <div>
+                           <label className="block text-[13px] font-bold text-secondary mb-2">
+                              메뉴명 (KR) *
+                           </label>
                            <input 
                               type="text" 
                               value={menu.name} 
                               onChange={(e) => handleMenuChange(menuId, 'name', e.target.value)}
-                              className="bg-transparent font-medium focus:outline-none placeholder-gray-400" 
-                              placeholder={t('partner_dashboard.settings_menu_name_placeholder')}
+                              className="w-full p-3 bg-surface rounded-xl border border-line focus:border-brand-lilac focus:bg-white transition-all outline-none" 
+                              placeholder="예: 수분 폭탄 페이셜 케어"
                            />
-                           {menu.nameTranslations && (
-                              <div className="flex items-center gap-2">
-                                 <button
-                                    onClick={() => toggleMenuExpanded(menuId)}
-                                    className="flex items-center gap-1 text-[11px] text-brand-lilac hover:text-brand-pink transition-colors"
-                                 >
-                                    <Globe className="w-3 h-3" />
-                                    {isExpanded ? t('partner_dashboard.settings_menu_translations_hide') : t('partner_dashboard.settings_menu_translations_show')}
-                                    <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                                 </button>
-                                 {isTranslating && (
-                                    <Loader2 className="w-3 h-3 animate-spin text-brand-lilac" />
-                                 )}
+                        </div>
+                        
+                        <div>
+                           <label className="block text-[13px] font-bold text-secondary mb-2">
+                              메뉴 설명 (KR)
+                           </label>
+                           <textarea 
+                              value={menu.description || ''} 
+                              onChange={(e) => handleMenuChange(menuId, 'description', e.target.value)}
+                              className="w-full p-3 bg-surface rounded-xl border border-line focus:border-brand-lilac focus:bg-white transition-all outline-none min-h-[80px] resize-none" 
+                              placeholder="건조한 피부에 깊은 보습을 선사하는..."
+                           />
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                           <div>
+                              <label className="block text-[13px] font-bold text-secondary mb-2">
+                                 가격 (KRW) *
+                              </label>
+                              <div className="relative">
+                                 <input 
+                                    type="number" 
+                                    value={menu.price || ''} 
+                                    onChange={(e) => handleMenuChange(menuId, 'price', parseInt(e.target.value) || 0)}
+                                    className="w-full p-3 bg-surface rounded-xl border border-line focus:border-brand-lilac focus:bg-white transition-all outline-none pr-20" 
+                                    placeholder="120000"
+                                 />
+                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[14px] font-bold text-secondary">₩</span>
                               </div>
-                           )}
-                           {isExpanded && menu.nameTranslations && (
-                              <div className="mt-2 p-3 bg-white rounded-lg border border-line space-y-1.5">
-                                 {Object.entries(menu.nameTranslations).map(([lang, translation]) => (
-                                    <div key={lang} className="flex items-center gap-2 text-[12px]">
-                                       <span className="font-bold text-secondary w-8 uppercase">{lang}:</span>
-                                       <span className="text-gray-700">{translation}</span>
+                              {/* 실시간 통화 환산 가이드 */}
+                              {menu.price > 0 && (
+                                 <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-secondary">
+                                    <span className="flex items-center gap-1">
+                                       <DollarSign className="w-3 h-3" />
+                                       {convertCurrency(menu.price, 'USD')}
+                                    </span>
+                                    <span>{convertCurrency(menu.price, 'THB')}</span>
+                                    <span>{convertCurrency(menu.price, 'CNY')}</span>
+                                    <span>{convertCurrency(menu.price, 'JPY')}</span>
+                                 </div>
+                              )}
+                           </div>
+                           
+                           <div>
+                              <label className="block text-[13px] font-bold text-secondary mb-2">
+                                 소요 시간 (분) *
+                              </label>
+                              <input 
+                                 type="number" 
+                                 value={menu.time || ''} 
+                                 onChange={(e) => handleMenuChange(menuId, 'time', parseInt(e.target.value) || 0)}
+                                 className="w-full p-3 bg-surface rounded-xl border border-line focus:border-brand-lilac focus:bg-white transition-all outline-none" 
+                                 placeholder="60"
+                              />
+                           </div>
+                        </div>
+                     </div>
+
+                     {/* AI 다국어 번역 섹션 */}
+                     <div className="border-t border-line pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                           <div className="flex items-center gap-2">
+                              <Sparkles className="w-5 h-5 text-brand-lilac" />
+                              <h4 className="font-bold text-[16px]">AI 다국어 자동 생성</h4>
+                           </div>
+                           <button
+                              onClick={() => translateMenuWithAI(menuId)}
+                              disabled={isTranslating || !menu.name.trim()}
+                              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-lilac to-brand-pink text-white rounded-xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                           >
+                              {isTranslating ? (
+                                 <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    번역 중...
+                                 </>
+                              ) : (
+                                 <>
+                                    <Sparkles className="w-4 h-4" />
+                                    AI 번역 실행
+                                 </>
+                              )}
+                           </button>
+                        </div>
+
+                        {hasTranslations ? (
+                           <div className="space-y-4">
+                              {/* 탭 형태로 ENG, JPN, THA, CHN 표시 */}
+                              <div className="flex gap-2 border-b border-line">
+                                 {(['en', 'ja', 'th', 'zh'] as const).map((lang) => {
+                                    const langNames = { en: 'ENG', ja: 'JPN', th: 'THA', zh: 'CHN' };
+                                    const isActive = expandedMenus.get(menuId) === lang;
+                                    return (
+                                       <button
+                                          key={lang}
+                                          onClick={() => toggleMenuLanguage(menuId, lang)}
+                                          className={`px-4 py-2 font-bold text-[13px] border-b-2 transition-colors ${
+                                             isActive
+                                                ? 'border-brand-lilac text-brand-lilac'
+                                                : 'border-transparent text-secondary hover:text-brand-lilac'
+                                          }`}
+                                       >
+                                          {langNames[lang]}
+                                       </button>
+                                    );
+                                 })}
+                              </div>
+
+                              {/* 선택된 언어의 번역 표시 및 수정 */}
+                              {expandedMenus.has(menuId) && (() => {
+                                 const selectedLang = expandedMenus.get(menuId);
+                                 if (!selectedLang || !menu.nameTranslations?.[selectedLang]) return null;
+                                 
+                                 return (
+                                    <div className="space-y-4 p-4 bg-gradient-to-br from-brand-lilac/5 to-brand-pink/5 rounded-xl border border-brand-lilac/20">
+                                       <div>
+                                          <label className="block text-[12px] font-bold text-secondary mb-2">
+                                             {selectedLang === 'en' ? 'ENG' : selectedLang === 'ja' ? 'JPN' : selectedLang === 'th' ? 'THA' : 'CHN'} - 메뉴명
+                                          </label>
+                                          <input
+                                             type="text"
+                                             value={menu.nameTranslations?.[selectedLang] || ''}
+                                             onChange={(e) => {
+                                                const newTranslations = { ...menu.nameTranslations };
+                                                newTranslations[selectedLang] = e.target.value;
+                                                setMenus(prev => prev.map(m => 
+                                                   m.id === menuId 
+                                                      ? { ...m, nameTranslations: newTranslations }
+                                                      : m
+                                                ));
+                                             }}
+                                             className="w-full p-3 bg-white rounded-lg border border-line focus:border-brand-lilac focus:bg-white transition-all outline-none"
+                                          />
+                                       </div>
+                                       
+                                       {menu.description && (
+                                          <div>
+                                             <label className="block text-[12px] font-bold text-secondary mb-2">
+                                                {selectedLang === 'en' ? 'ENG' : selectedLang === 'ja' ? 'JPN' : selectedLang === 'th' ? 'THA' : 'CHN'} - 설명
+                                             </label>
+                                             <textarea
+                                                value={menu.descriptionTranslations?.[selectedLang] || ''}
+                                                onChange={(e) => {
+                                                   const newTranslations = { ...menu.descriptionTranslations || {} };
+                                                   newTranslations[selectedLang] = e.target.value;
+                                                   setMenus(prev => prev.map(m => 
+                                                      m.id === menuId 
+                                                         ? { ...m, descriptionTranslations: newTranslations }
+                                                         : m
+                                                   ));
+                                                }}
+                                                className="w-full p-3 bg-white rounded-lg border border-line focus:border-brand-lilac focus:bg-white transition-all outline-none min-h-[80px] resize-none"
+                                             />
+                                          </div>
+                                       )}
                                     </div>
-                                 ))}
-                              </div>
-                           )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <span className="text-[14px] text-secondary">{formatPrice(0).replace(/[0-9,.]/g, '').trim()}</span>
-                           <input 
-                              type="number" 
-                              value={menu.price} 
-                              onChange={(e) => handleMenuChange(menuId, 'price', parseInt(e.target.value) || 0)}
-                              className="w-24 bg-transparent font-bold text-right focus:outline-none" 
-                           />
-                        </div>
-                        <div className="flex items-center gap-2 border-l border-line pl-4">
-                           <input 
-                              type="number" 
-                              value={menu.time} 
-                              onChange={(e) => handleMenuChange(menuId, 'time', parseInt(e.target.value) || 0)}
-                              className="w-12 bg-transparent text-right focus:outline-none" 
-                           />
-                           <span className="text-[14px] text-secondary">{t('partner_dashboard.settings_menu_minutes')}</span>
-                        </div>
+                                 );
+                              })()}
+                           </div>
+                        ) : (
+                           <div className="text-center py-8 text-secondary text-[13px]">
+                              AI 번역 실행 버튼을 클릭하여 자동으로 번역을 생성하세요.
+                           </div>
+                        )}
+                     </div>
+
+                     {/* 미리보기 및 저장 */}
+                     <div className="border-t border-line pt-4 flex items-center justify-between">
+                        <button
+                           onClick={() => {
+                              if (hasTranslations) {
+                                 setPreviewMenuId(menuId);
+                                 setPreviewLanguage('en');
+                              } else {
+                                 alert('먼저 AI 번역을 실행해주세요.');
+                              }
+                           }}
+                           className="flex items-center gap-2 px-4 py-2 bg-surface text-secondary rounded-xl font-bold hover:bg-line transition-colors"
+                        >
+                           <Eye className="w-4 h-4" />
+                           외국인 고객에게 어떻게 보이나요?
+                        </button>
+                        
                         <button 
                            onClick={() => handleDeleteMenu(menuId)}
-                           className="p-2 text-secondary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                           className="p-2 text-secondary hover:text-red-500 transition-colors"
                         >
-                           <Trash2 className="w-4 h-4" />
+                           <Trash2 className="w-5 h-5" />
                         </button>
                      </div>
                   </div>
@@ -578,6 +756,80 @@ function SettingsPageContent() {
             })}
          </div>
       </div>
+
+      {/* 미리보기 모달 */}
+      {previewMenuId !== null && (() => {
+         const menu = menus.find(m => m.id === previewMenuId);
+         if (!menu) return null;
+         
+         return (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+               <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto"
+               >
+                  <div className="flex items-center justify-between mb-6">
+                     <h3 className="font-bold text-[20px]">미리보기</h3>
+                     <button
+                        onClick={() => setPreviewMenuId(null)}
+                        className="p-2 hover:bg-surface rounded-lg transition-colors"
+                     >
+                        <X className="w-5 h-5" />
+                     </button>
+                  </div>
+                  
+                  {/* 언어 선택 */}
+                  <div className="flex gap-2 mb-6">
+                     {(['en', 'ja', 'th', 'zh'] as const).map((lang) => {
+                        const langNames = { en: 'English', ja: '日本語', th: 'ไทย', zh: '中文' };
+                        return (
+                           <button
+                              key={lang}
+                              onClick={() => setPreviewLanguage(lang)}
+                              className={`px-4 py-2 rounded-lg font-bold text-[13px] transition-colors ${
+                                 previewLanguage === lang
+                                    ? 'bg-brand-lilac text-white'
+                                    : 'bg-surface text-secondary hover:bg-line'
+                              }`}
+                           >
+                              {langNames[lang]}
+                           </button>
+                        );
+                     })}
+                  </div>
+                  
+                  {/* 미리보기 카드 */}
+                  <div className="bg-gradient-to-br from-brand-lilac/10 to-brand-pink/10 rounded-xl p-6 border border-brand-lilac/20">
+                     <h4 className="font-bold text-[18px] mb-2">
+                        {menu.nameTranslations?.[previewLanguage] || menu.name}
+                     </h4>
+                     {(menu.descriptionTranslations?.[previewLanguage] || menu.description) && (
+                        <p className="text-[14px] text-secondary mb-4">
+                           {menu.descriptionTranslations?.[previewLanguage] || menu.description}
+                        </p>
+                     )}
+                     <div className="flex items-center justify-between">
+                        <div>
+                           <div className="text-[24px] font-bold text-brand-lilac">
+                              {previewLanguage === 'en' && convertCurrency(menu.price, 'USD')}
+                              {previewLanguage === 'ja' && convertCurrency(menu.price, 'JPY')}
+                              {previewLanguage === 'th' && convertCurrency(menu.price, 'THB')}
+                              {previewLanguage === 'zh' && convertCurrency(menu.price, 'CNY')}
+                           </div>
+                           <div className="text-[12px] text-secondary">
+                              {menu.time}분
+                           </div>
+                        </div>
+                        <button className="px-6 py-3 bg-gradient-to-r from-brand-lilac to-brand-pink text-white rounded-xl font-bold">
+                           예약하기
+                        </button>
+                     </div>
+                  </div>
+               </motion.div>
+            </div>
+         );
+      })()}
         </>
       )}
     </div>

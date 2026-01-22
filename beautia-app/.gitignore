@@ -48,13 +48,10 @@ next-env.d.ts
 !.vscode/settings.json
 !.vscode/extensions.json
 
-# Flutter
-flutter_app/.dart_tool/
-flutter_app/.flutter-plugins
-flutter_app/.flutter-plugins-dependencies
-flutter_app/.packages
-flutter_app/build/
-flutter_app/.pub-cache/
+# Flutter - 전체 폴더 제외
+/flutter_app/
+/BeautiaApp/
+/mobile/
 
 # Build outputs
 *.log

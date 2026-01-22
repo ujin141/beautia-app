@@ -10,6 +10,14 @@ export interface IShopMenu {
     th?: string;
     zh?: string;
   };
+  description?: string;
+  descriptionTranslations?: {
+    ko?: string;
+    en?: string;
+    ja?: string;
+    th?: string;
+    zh?: string;
+  };
   price: number;
   time: number; // minutes
 }
@@ -44,6 +52,14 @@ const ShopMenuSchema = new Schema({
   id: { type: String, required: true },
   name: { type: String, required: true },
   nameTranslations: {
+    ko: String,
+    en: String,
+    ja: String,
+    th: String,
+    zh: String,
+  },
+  description: { type: String },
+  descriptionTranslations: {
     ko: String,
     en: String,
     ja: String,

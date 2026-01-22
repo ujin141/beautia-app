@@ -102,7 +102,7 @@ import CustomerCoupon from '@/models/CustomerCoupon';
 // POST: 예약 생성
 async function handlePost(request: NextRequest) {
   const body = await request.json();
-  const { userId, userName, userPhone, shopId, shopName, partnerId, serviceId, serviceName, date, time, price, couponId, staffId, staffName } = body;
+  const { userId, userName, userPhone, shopId, shopName, partnerId, serviceId, serviceName, date, time, price, couponId, staffId, staffName, paymentType, depositAmount, remainingAmount } = body;
 
   // 필수 필드 검증
   const validation = validateRequestBody(body, [
@@ -121,6 +121,35 @@ async function handlePost(request: NextRequest) {
 
   if (!validation.valid) {
     return validationErrorResponse(validation.error!, validation.details);
+  }
+
+  // 예약 시간 중복 체크
+  try {
+    const existingBookingFilter: any = {
+      shopId: shopId,
+      date: date,
+      time: time,
+      status: { $in: ['pending', 'confirmed'] }, // 취소되지 않은 예약만 체크
+    };
+
+    // 스태프가 지정된 경우, 같은 스태프의 예약만 체크
+    // 스태프가 없는 경우, 매장 전체 예약 체크
+    if (staffId) {
+      existingBookingFilter.staffId = staffId;
+    }
+
+    const existingBooking = await Booking.findOne(existingBookingFilter);
+
+    if (existingBooking) {
+      return validationErrorResponse(
+        staffId 
+          ? '해당 시간에 이미 예약이 있습니다. 다른 시간을 선택해주세요.' 
+          : '해당 시간에 이미 예약이 있습니다. 다른 시간을 선택해주세요.'
+      );
+    }
+  } catch (error) {
+    console.error('예약 중복 체크 오류:', error);
+    // 중복 체크 실패 시에도 예약 생성은 진행 (로깅만)
   }
 
   // 쿠폰 처리
@@ -197,6 +226,9 @@ async function handlePost(request: NextRequest) {
     couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
     status: 'pending',
     paymentStatus: 'unpaid',
+    paymentType: paymentType || 'full',
+    depositAmount: depositAmount,
+    remainingAmount: remainingAmount,
   });
 
   await booking.save();
