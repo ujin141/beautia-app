@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withCustomerAuth } from '@/lib/customer-token-verifier';
+import { verifyCustomerToken } from '@/lib/customer-token-verifier';
 import connectDB from '@/lib/mongodb';
 import CommunityPost from '@/models/CommunityPost';
 import CustomerUser from '@/models/CustomerUser';
@@ -11,15 +11,26 @@ import CustomerUser from '@/models/CustomerUser';
  */
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await withCustomerAuth(request);
-    if (!authResult.success) {
+    // 인증 토큰 확인
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { success: false, error: authResult.error },
-        { status: authResult.status || 401 }
+        { success: false, error: '인증이 필요합니다.' },
+        { status: 401 }
       );
     }
 
-    const userId = authResult.userId;
+    const token = authHeader.substring(7);
+    const customer = await verifyCustomerToken(token);
+    
+    if (!customer) {
+      return NextResponse.json(
+        { success: false, error: '인증이 필요합니다.' },
+        { status: 401 }
+      );
+    }
+
+    const userId = customer.id;
     await connectDB();
 
     const body = await request.json();
